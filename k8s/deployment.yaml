@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: monitor
+  template:
+    metadata:
+      labels:
+        app: monitor
+    spec:
+      containers:
+        - name: monitor
+          # A imagem deve ser a publicada no Docker Hub
+          image: rhdd1/monitor:latest
+          # Política padrão: baixa a imagem se não existir localmente
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
