@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 1 # Quantidade de réplicas do NGINX
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest # Pode ser substituída pela imagem customizada que você vai buildar
+        ports:
+        - containerPort: 80 # Porta interna do container
