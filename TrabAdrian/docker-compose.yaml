@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 version: "3.9"
 
 services:
@@ -55,3 +56,32 @@ services:
 volumes:
   pgdata:
 >>>>>>> 09865ba (Add files via upload)
+=======
+version: "3.9"
+
+services:
+  web:
+    build: .
+    container_name: meu_app
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./app:/app
+    environment:
+      - FLASK_ENV=development
+    restart: unless-stopped
+
+  db:
+    image: postgres:15
+    container_name: meu_banco
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=senha123
+      - POSTGRES_DB=meubanco
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+>>>>>>> 4c2cc360af456d665ddbe735f6baa3c0e612940a
