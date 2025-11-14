@@ -21,14 +21,20 @@ jobs:
 
       # 2️⃣ Set vars
       - name: Set vars
+        shell: powershell
         id: vars
         run: |
+          # Define IMAGE e TAG_SHA
           echo "IMAGE=Rhdd1/monitor" >> $GITHUB_OUTPUT
-          echo "TAG_SHA=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          echo "TAG_SHA=${env:GITHUB_SHA.Substring(0,7)}" >> $GITHUB_OUTPUT
+
           # Usa 'default' se K8S_NAMESPACE não estiver definido
-          NAMESPACE="${{ secrets.K8S_NAMESPACE }}"
-          if [ -z "$NAMESPACE" ]; then NAMESPACE="default"; fi
-          echo "NAMESPACE=$NAMESPACE" >> $GITHUB_OUTPUT
+          if (-not $env:K8S_NAMESPACE -or $env:K8S_NAMESPACE -eq "") {
+              $namespace = "default"
+          } else {
+              $namespace = $env:K8S_NAMESPACE
+          }
+          echo "NAMESPACE=$namespace" >> $GITHUB_OUTPUT
 
       # 3️⃣ Setup kubectl
       - name: Setup kubectl
@@ -62,7 +68,7 @@ jobs:
               Write-Host "Namespace '$env:NAMESPACE' already exists."
           }
 
-      # 6️⃣ Apply base manifests
+      # 6️⃣ Apply base manifests (service + nginx)
       - name: Apply base manifests
         shell: powershell
         run: |
