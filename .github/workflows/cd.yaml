@@ -57,22 +57,19 @@ jobs:
               & kubectl create ns $env:NAMESPACE
           }
 
-      # 6️⃣ Aplicar manifests base com try/catch
+      # 6️⃣ Aplicar manifests base (somente serviço e Nginx)
       - name: Apply base manifests
         shell: powershell
         run: |
-          try { & kubectl apply -n $env:NAMESPACE -f "k8s/service.yaml" -o yaml } catch { Write-Host "Erro ignorado aplicando service.yaml" }
-          try { & kubectl apply -n $env:NAMESPACE -f "k8s/prometheus-deployment.yaml" -o yaml } catch { Write-Host "Erro ignorado aplicando prometheus-deployment.yaml" }
-          try { & kubectl apply -n $env:NAMESPACE -f "k8s/grafana-deployment.yaml" -o yaml } catch { Write-Host "Erro ignorado aplicando grafana-deployment.yaml" }
-          try { & kubectl apply -n $env:NAMESPACE -f "k8s/nginx-deployment.yaml" -o yaml } catch { Write-Host "Erro ignorado aplicando nginx-deployment.yaml" }
-          try { & kubectl apply -n $env:NAMESPACE -f "k8s/nginx-service.yaml" -o yaml } catch { Write-Host "Erro ignorado aplicando nginx-service.yaml" }
-          try { & kubectl apply -n $env:NAMESPACE -f "k8s/prometheus-config.yaml" -o yaml } catch { Write-Host "Erro ignorado aplicando prometheus-config.yaml" }
+          try { & kubectl apply -n $env:NAMESPACE -f "k8s/service.yaml" } catch { Write-Host "Erro ignorado aplicando service.yaml" }
+          try { & kubectl apply -n $env:NAMESPACE -f "k8s/nginx-deployment.yaml" } catch { Write-Host "Erro ignorado aplicando nginx-deployment.yaml" }
+          try { & kubectl apply -n $env:NAMESPACE -f "k8s/nginx-service.yaml" } catch { Write-Host "Erro ignorado aplicando nginx-service.yaml" }
 
       # 7️⃣ Aplicar deployment da aplicação
       - name: Apply app deployment
         shell: powershell
         run: |
-          try { & kubectl apply -n $env:NAMESPACE -f "k8s/deployment.yaml" -o yaml } catch { Write-Host "Erro ignorado aplicando deployment.yaml" }
+          try { & kubectl apply -n $env:NAMESPACE -f "k8s/deployment.yaml" } catch { Write-Host "Erro ignorado aplicando deployment.yaml" }
 
       # 8️⃣ Atualizar imagem para a nova tag
       - name: Set new image tag
