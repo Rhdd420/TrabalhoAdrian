@@ -15,11 +15,11 @@ jobs:
     environment: production
 
     steps:
-      # 1️⃣ Checkout do código
+      # 1️⃣ Checkout
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 2️⃣ Definir variáveis
+      # 2️⃣ Set vars
       - name: Set vars
         id: vars
         run: |
@@ -27,8 +27,8 @@ jobs:
           echo "TAG_SHA=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
           echo "NAMESPACE=${{ secrets.K8S_NAMESPACE || 'default' }}" >> $GITHUB_OUTPUT
 
-      # 3️⃣ Instalar kubectl se não existir
-      - name: Setup kubectl (Windows)
+      # 3️⃣ Setup kubectl
+      - name: Setup kubectl
         shell: powershell
         run: |
           $kubectlPath = "$env:USERPROFILE\kubectl.exe"
@@ -36,9 +36,8 @@ jobs:
               Write-Host "kubectl not found. Installing..."
               Invoke-WebRequest -Uri https://dl.k8s.io/release/v1.33.5/bin/windows/amd64/kubectl.exe -OutFile $kubectlPath
           }
-          $env:PATH += ";$env:USERPROFILE"
 
-      # 4️⃣ Configurar kubeconfig
+      # 4️⃣ Configure kubeconfig
       - name: Configure kubeconfig
         shell: powershell
         run: |
@@ -46,53 +45,45 @@ jobs:
           if (!(Test-Path $kubeDir)) { New-Item -ItemType Directory -Path $kubeDir | Out-Null }
           [System.IO.File]::WriteAllBytes("$kubeDir\config",[System.Convert]::FromBase64String("${{ secrets.KUBE_CONFIG_DATA }}"))
 
-      # 5️⃣ Criar namespace se não existir
-      - name: Create namespace if not exists
+      # 5️⃣ Create namespace if not exists
+      - name: Create namespace
         shell: powershell
         run: |
-          $kubectl = "$env:USERPROFILE\kubectl.exe"
-          try {
-              & $kubectl get ns $env:NAMESPACE | Out-Null
-              Write-Host "Namespace '$env:NAMESPACE' already exists."
-          } catch {
+          & "$env:USERPROFILE\kubectl.exe" get ns $env:NAMESPACE -ErrorAction SilentlyContinue
+          if ($LASTEXITCODE -ne 0) {
               Write-Host "Namespace '$env:NAMESPACE' does not exist. Creating..."
-              & $kubectl create ns $env:NAMESPACE
+              & "$env:USERPROFILE\kubectl.exe" create ns $env:NAMESPACE
           }
 
-      # 6️⃣ Aplicar manifests base (somente serviço e Nginx)
+      # 6️⃣ Apply base manifests (service + Nginx)
       - name: Apply base manifests
         shell: powershell
         run: |
-          $kubectl = "$env:USERPROFILE\kubectl.exe"
-          & $kubectl apply -n $env:NAMESPACE -f "k8s/service.yaml"
-          & $kubectl apply -n $env:NAMESPACE -f "k8s/nginx-deployment.yaml"
-          & $kubectl apply -n $env:NAMESPACE -f "k8s/nginx-service.yaml"
+          & "$env:USERPROFILE\kubectl.exe" apply -n $env:NAMESPACE -f "k8s/service.yaml"
+          & "$env:USERPROFILE\kubectl.exe" apply -n $env:NAMESPACE -f "k8s/nginx-deployment.yaml"
+          & "$env:USERPROFILE\kubectl.exe" apply -n $env:NAMESPACE -f "k8s/nginx-service.yaml"
 
-      # 7️⃣ Aplicar deployment da aplicação
+      # 7️⃣ Apply app deployment
       - name: Apply app deployment
         shell: powershell
         run: |
-          $kubectl = "$env:USERPROFILE\kubectl.exe"
-          & $kubectl apply -n $env:NAMESPACE -f "k8s/deployment.yaml"
+          & "$env:USERPROFILE\kubectl.exe" apply -n $env:NAMESPACE -f "k8s/deployment.yaml"
 
-      # 8️⃣ Atualizar imagem para a nova tag
+      # 8️⃣ Set new image tag
       - name: Set new image tag
         shell: powershell
         run: |
-          $kubectl = "$env:USERPROFILE\kubectl.exe"
-          & $kubectl set image deployment/monitor monitor=$env:IMAGE:$env:TAG_SHA -n $env:NAMESPACE
+          & "$env:USERPROFILE\kubectl.exe" set image deployment/monitor monitor=$env:IMAGE:$env:TAG_SHA -n $env:NAMESPACE
 
-      # 9️⃣ Esperar rollout do deployment
+      # 9️⃣ Wait rollout
       - name: Wait rollout
         shell: powershell
         run: |
-          $kubectl = "$env:USERPROFILE\kubectl.exe"
-          & $kubectl rollout status deployment/monitor -n $env:NAMESPACE --timeout=120s
+          & "$env:USERPROFILE\kubectl.exe" rollout status deployment/monitor -n $env:NAMESPACE --timeout=120s
 
-      # 🔟 Debug: listar pods e services
+      # 🔟 Debug: pods e services
       - name: Debug
         shell: powershell
         run: |
-          $kubectl = "$env:USERPROFILE\kubectl.exe"
-          & $kubectl get pods -o wide -n $env:NAMESPACE
-          & $kubectl get svc -n $env:NAMESPACE
+          & "$env:USERPROFILE\kubectl.exe" get pods -o wide -n $env:NAMESPACE
+          & "$env:USERPROFILE\kubectl.exe" get svc -n $env:NAMESPACE
