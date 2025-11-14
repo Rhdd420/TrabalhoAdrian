@@ -36,7 +36,6 @@ jobs:
               Write-Host "kubectl not found. Installing..."
               Invoke-WebRequest -Uri https://dl.k8s.io/release/v1.33.5/bin/windows/amd64/kubectl.exe -OutFile $kubectlPath
           }
-          # Adiciona ao PATH temporariamente
           $env:Path = "$env:USERPROFILE;$env:Path"
 
       # 4️⃣ Configure kubeconfig
@@ -52,7 +51,7 @@ jobs:
         shell: powershell
         run: |
           if (-not $env:NAMESPACE) { $env:NAMESPACE = "default" }
-          kubectl get ns $env:NAMESPACE 2>$null
+          kubectl get ns $env:NAMESPACE > $null 2>&1
           if ($LASTEXITCODE -ne 0) {
               Write-Host "Namespace '$env:NAMESPACE' does not exist. Creating..."
               kubectl create ns $env:NAMESPACE
@@ -64,20 +63,21 @@ jobs:
       - name: Apply base manifests
         shell: powershell
         run: |
-          kubectl apply -n $env:NAMESPACE -f "k8s/service.yaml"
-          kubectl apply -n $env:NAMESPACE -f "k8s/nginx-deployment.yaml"
-          kubectl apply -n $env:NAMESPACE -f "k8s/nginx-service.yaml"
+          kubectl apply -n $env:NAMESPACE -f k8s/service.yaml
+          kubectl apply -n $env:NAMESPACE -f k8s/nginx-deployment.yaml
+          kubectl apply -n $env:NAMESPACE -f k8s/nginx-service.yaml
 
       # 7️⃣ Apply app deployment
       - name: Apply app deployment
         shell: powershell
         run: |
-          kubectl apply -n $env:NAMESPACE -f "k8s/deployment.yaml"
+          kubectl apply -n $env:NAMESPACE -f k8s/deployment.yaml
 
       # 8️⃣ Set new image tag
       - name: Set new image tag
         shell: powershell
         run: |
+          if (-not $env:IMAGE -or -not $env:TAG_SHA) { throw "IMAGE or TAG_SHA not defined" }
           kubectl set image deployment/monitor monitor=$env:IMAGE:$env:TAG_SHA -n $env:NAMESPACE
 
       # 9️⃣ Wait rollout
