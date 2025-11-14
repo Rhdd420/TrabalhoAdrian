@@ -25,7 +25,10 @@ jobs:
         run: |
           echo "IMAGE=Rhdd1/monitor" >> $GITHUB_OUTPUT
           echo "TAG_SHA=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-          echo "NAMESPACE=${{ secrets.K8S_NAMESPACE || 'default' }}" >> $GITHUB_OUTPUT
+          # Usa 'default' se K8S_NAMESPACE não estiver definido
+          NAMESPACE="${{ secrets.K8S_NAMESPACE }}"
+          if [ -z "$NAMESPACE" ]; then NAMESPACE="default"; fi
+          echo "NAMESPACE=$NAMESPACE" >> $GITHUB_OUTPUT
 
       # 3️⃣ Setup kubectl
       - name: Setup kubectl
