@@ -26,7 +26,8 @@ jobs:
           echo "NAMESPACE=${{ secrets.K8S_NAMESPACE || 'default' }}" >> $GITHUB_OUTPUT
 
       - name: Setup kubectl (Windows)
-        shell: pwsh
+        shell: powershell
+
         run: |
           if (-not (Get-Command kubectl -ErrorAction SilentlyContinue)) {
               Write-Host "kubectl not found. Installing..."
@@ -35,21 +36,24 @@ jobs:
           }
 
       - name: Configure kubeconfig
-        shell: pwsh
+        shell: powershell
+
         run: |
           $kubeDir = "$env:USERPROFILE\.kube"
           if (!(Test-Path $kubeDir)) { New-Item -ItemType Directory -Path $kubeDir | Out-Null }
           [System.IO.File]::WriteAllBytes("$kubeDir\config",[System.Convert]::FromBase64String("${{ secrets.KUBE_CONFIG_DATA }}"))
 
       - name: Create namespace if not exists
-        shell: pwsh
+        shell: powershell
+
         run: |
           if (-not (kubectl get ns ${{ steps.vars.outputs.NAMESPACE }} -ErrorAction SilentlyContinue)) {
               kubectl create ns ${{ steps.vars.outputs.NAMESPACE }}
           }
 
       - name: Apply base manifests
-        shell: pwsh
+        shell: powershell
+
         run: |
           kubectl apply -n ${{ steps.vars.outputs.NAMESPACE }} -f k8s/service.yaml -o yaml || $true
           kubectl apply -n ${{ steps.vars.outputs.NAMESPACE }} -f k8s/prometheus-deployment.yaml -o yaml || $true
@@ -59,22 +63,26 @@ jobs:
           kubectl apply -n ${{ steps.vars.outputs.NAMESPACE }} -f k8s/prometheus-config.yaml -o yaml || $true
 
       - name: Apply app deployment
-        shell: pwsh
+        shell: powershell
+
         run: |
           kubectl apply -n ${{ steps.vars.outputs.NAMESPACE }} -f k8s/deployment.yaml
 
       - name: Set new image tag
-        shell: pwsh
+        shell: powershell
+
         run: |
           kubectl set image deployment/monitor monitor=${{ steps.vars.outputs.IMAGE }}:${{ steps.vars.outputs.TAG_SHA }} -n ${{ steps.vars.outputs.NAMESPACE }}
 
       - name: Wait rollout
-        shell: pwsh
+        shell: powershell
+
         run: |
           kubectl rollout status deployment/monitor -n ${{ steps.vars.outputs.NAMESPACE }} --timeout=120s
 
       - name: Debug
-        shell: pwsh
+        shell: powershell
+
         run: |
           kubectl get pods -o wide -n ${{ steps.vars.outputs.NAMESPACE }}
           kubectl get svc -n ${{ steps.vars.outputs.NAMESPACE }}
